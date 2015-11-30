@@ -1,0 +1,21 @@
+{
+  "name": "neTpyceB/TMCms-module-sessions",
+  "type": "library",
+  "description": "Module Sessions for TMCms",
+  "keywords": ["module", "sessions"],
+  "homepage": "http://devp.eu/",
+  "license": "proprietary",
+  "authors": [
+    {
+      "name": "Vadims Petrusevs",
+      "email": "info@devp.eu",
+      "homepage": "http://devp.eu/",
+      "role": "Developer"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "TMCms\\Modules\\Sessions\\": "src"
+    }
+  }
+}
