@@ -10,12 +10,13 @@ use neTpyceB\TMCms\Orm\Entity;
  *
  * @method string getData()
  * @method int getTs()
- * @method setAgent(string $agent)
- * @method setData(string $data)
- * @method setIp(string $ip)
- * @method setSid(string $sid)
- * @method setTs(int $ts)
- * @method setUserId(int $user_id)
+ * @method int getUserId()
+ * @method $this setAgent(string $agent)
+ * @method $this setData(string $data)
+ * @method $this setIp(string $ip)
+ * @method $this setSid(string $sid)
+ * @method $this setTs(int $ts)
+ * @method $this setUserId(int $user_id)
  */
 class SessionEntity extends Entity
 {
