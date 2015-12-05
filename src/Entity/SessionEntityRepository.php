@@ -1,12 +1,12 @@
 <?php
 
-namespace neTpyceB\TMCms\Modules\Sessions\Entity;
+namespace TMCms\Modules\Sessions\Entity;
 
 use neTpyceB\TMCms\Orm\EntityRepository;
 
 /**
  * Class SessionCollection
- * @package neTpyceB\TMCms\Modules\Sessions\Object
+ * @package TMCms\Modules\Sessions\Object
  *
  * @method setWhereSid(string $sid)
  * @method setTs(int $ts)

@@ -1,6 +1,6 @@
 <?php
 
-namespace neTpyceB\TMCms\Modules\Sessions;
+namespace TMCms\Modules\Sessions;
 
 defined('INC') or exit;
 

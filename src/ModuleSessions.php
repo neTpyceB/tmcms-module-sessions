@@ -1,16 +1,17 @@
 <?php
 
-namespace neTpyceB\TMCms\Modules\Sessions;
+namespace TMCms\Modules\Sessions;
 
 use neTpyceB\TMCms\Modules\IModule;
-use neTpyceB\TMCms\Modules\Sessions\Object\SessionEntity;
-use neTpyceB\TMCms\Modules\Sessions\Object\SessionEntityRepository;
 use neTpyceB\TMCms\Traits\singletonInstanceTrait;
+use TMCms\Modules\Sessions\Entity\SessionEntity;
+use TMCms\Modules\Sessions\Entity\SessionEntityRepository;
 
 defined('INC') or exit;
 
-class ModuleSessions implements IModule {
-    use singletonInstanceTrait;
+class ModuleSessions implements IModule
+{
+	use singletonInstanceTrait;
 
 	public static $tables = array(
 		'sessions' => 'm_sessions'
@@ -24,7 +25,8 @@ class ModuleSessions implements IModule {
 	private static $_session_data = '';
 	private static $_hash_uid = ''; // Required to check hash with sid
 
-	public static function start($user_id, $data = []) {
+	public static function start($user_id, $data = [])
+	{
 		// No user id supplied
 		if (!$user_id || !ctype_digit((string)$user_id)) {
 			return false;
@@ -34,7 +36,7 @@ class ModuleSessions implements IModule {
 		self::removeOld();
 
 		// Generate unique session id
-		while (($sid = self::generateSidHash()) && q_check(self::$tables['sessions'], '`sid` = "'. $sid .'"'));
+		while (($sid = self::generateSidHash()) && q_check(self::$tables['sessions'], '`sid` = "' . $sid . '"')) ;
 
 		// Prepare data for db
 		$data = serialize($data);
@@ -62,7 +64,8 @@ class ModuleSessions implements IModule {
 		return $session;
 	}
 
-	private static function generateSidHash($uid = '') {
+	private static function generateSidHash($uid = '')
+	{
 		// Generate random if not supplied
 		if (!$uid) {
 			$uid = uniqid(mt_rand(), 1);
@@ -74,7 +77,8 @@ class ModuleSessions implements IModule {
 		return md5(VISITOR_HASH . $uid . VISITOR_HASH);
 	}
 
-	public static function stop() {
+	public static function stop()
+	{
 		// Not exists in browser
 		if (!isset($_COOKIE[self::$cookie_name])) {
 			return false;
@@ -110,14 +114,15 @@ class ModuleSessions implements IModule {
 	 * @return string
 	 *
 	 */
-	public static function getSid() {
+	public static function getSid()
+	{
 		$sid = NULL;
 
-		if (isset(self::$_sid)) { // Check in local cache
+		if (isset(self::$_sid) && self::$_sid) { // Check in local cache
 			$sid = self::$_sid;
-		} elseif (isset($_SESSION[self::$cookie_name])) { // Check server session
+		} elseif (isset($_SESSION[self::$cookie_name]) && $_SESSION[self::$cookie_name]) { // Check server session
 			$sid = $_SESSION[self::$cookie_name];
-		} elseif (isset($_COOKIE[self::$cookie_name])) { // Check cookie
+		} elseif (isset($_COOKIE[self::$cookie_name]) && $_COOKIE[self::$cookie_name]) { // Check cookie
 			$sid = $_COOKIE[self::$cookie_name];
 		}
 
@@ -133,7 +138,8 @@ class ModuleSessions implements IModule {
 	 * Get data saved in current session
 	 * @return array
 	 */
-	public static function getData() {
+	public static function getData()
+	{
 		$sid = self::getSid();
 		if (!$sid) {
 			return NULL;
@@ -147,7 +153,7 @@ class ModuleSessions implements IModule {
 		// Or get from db
 		$sessions = new SessionEntityRepository();
 		$sessions->setWhereSid($sid);
-		/** @var Session $session */
+		/** @var SessionEntity $session */
 		$session = $sessions->getFirstObjectFromCollection();
 		if (!$session) {
 			return NULL;
@@ -156,7 +162,8 @@ class ModuleSessions implements IModule {
 		return unserialize($session->getData());
 	}
 
-	public static function check($touch = false, $return_data = false) {
+	public static function check($touch = false, $return_data = false)
+	{
 		// Maybe we need just to check
 		if (!$touch && !$return_data && self::$_check_cache) {
 			return true;
@@ -171,7 +178,7 @@ class ModuleSessions implements IModule {
 		// Find session entry in db
 		$sessions = new SessionEntityRepository();
 		$sessions->setWhereSid($sid);
-		/** @var Session $session */
+		/** @var SessionEntity $session */
 		$session = $sessions->getFirstObjectFromCollection();
 		if (!$session) {
 			return false;
@@ -208,7 +215,15 @@ class ModuleSessions implements IModule {
 	 * Update current session timestamp
 	 * @param string $sid
 	 */
-	private static function touch($sid) {
+	public static function touch($sid = NULL)
+	{
+		if (!$sid) {
+			$sid = self::getSid();
+		}
+
+		if (!$sid) {
+			return;
+		}
 		$sessions = new SessionEntityRepository();
 		$sessions->setWhereSid($sid);
 		$sessions->setTs(NOW);
@@ -219,7 +234,8 @@ class ModuleSessions implements IModule {
 	 * @param int $ttl hals a day by default
 	 * @return bool
 	 */
-	private static function removeOld($ttl = 43200) {
+	private static function removeOld($ttl = 43200)
+	{
 		// Chance of 0.1% to clean up
 		if (mt_rand(0, 999)) {
 			return false;

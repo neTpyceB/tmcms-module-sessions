@@ -1,12 +1,12 @@
 <?php
 
-namespace neTpyceB\TMCms\Modules\Sessions\Entity;
+namespace TMCms\Modules\Sessions\Entity;
 
 use neTpyceB\TMCms\Orm\Entity;
 
 /**
  * Class Session
- * @package neTpyceB\TMCms\Modules\Sessions\Object
+ * @package TMCms\Modules\Sessions\Object
  *
  * @method string getData()
  * @method int getTs()
