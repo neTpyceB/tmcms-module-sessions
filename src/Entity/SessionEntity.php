@@ -2,7 +2,7 @@
 
 namespace TMCms\Modules\Sessions\Entity;
 
-use neTpyceB\TMCms\Orm\Entity;
+use TMCms\Orm\Entity;
 
 /**
  * Class Session

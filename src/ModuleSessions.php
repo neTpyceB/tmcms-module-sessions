@@ -2,8 +2,8 @@
 
 namespace TMCms\Modules\Sessions;
 
-use neTpyceB\TMCms\Modules\IModule;
-use neTpyceB\TMCms\Traits\singletonInstanceTrait;
+use TMCms\Modules\IModule;
+use TMCms\Traits\singletonInstanceTrait;
 use TMCms\Modules\Sessions\Entity\SessionEntity;
 use TMCms\Modules\Sessions\Entity\SessionEntityRepository;
 
