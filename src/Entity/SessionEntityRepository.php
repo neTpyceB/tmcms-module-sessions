@@ -14,4 +14,30 @@ use TMCms\Orm\EntityRepository;
 class SessionEntityRepository extends EntityRepository
 {
     protected $db_table = 'm_sessions';
+
+    protected $table_structure = [
+        'fields' => [
+            'user_id' => [
+                'type' => 'index',
+            ],
+            'sid' => [
+                'type' => 'char',
+                'length' => 32,
+            ],
+            'ip' => [
+                'type' => 'varchar',
+                'length' => 15,
+            ],
+            'ts' => [
+                'type' => 'int',
+                'unsigned' => true,
+            ],
+            'agent' => [
+                'type' => 'varchar',
+            ],
+            'data' => [
+                'type' => 'text',
+            ],
+        ],
+    ];
 }

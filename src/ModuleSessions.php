@@ -27,6 +27,9 @@ class ModuleSessions implements IModule
 
 	public static function start($user_id, $data = [])
 	{
+		// Ensure DB exists
+		$sessions = new SessionEntityRepository();
+
 		// No user id supplied
 		if (!$user_id || !ctype_digit((string)$user_id)) {
 			return false;
