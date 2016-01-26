@@ -20,16 +20,13 @@ class ModuleSessions implements IModule
 	private static $ttl_in_seconds = 3600; // One hour
 	private static $cookie_name = 'sid';
 
-	private static $_check_cache = false;
+	private static $_check_cache;
 	private static $_sid = '';
 	private static $_session_data = '';
 	private static $_hash_uid = ''; // Required to check hash with sid
 
 	public static function start($user_id, $data = [])
 	{
-		// Ensure DB exists
-		$sessions = new SessionEntityRepository();
-
 		// No user id supplied
 		if (!$user_id || !ctype_digit((string)$user_id)) {
 			return false;
@@ -169,7 +166,7 @@ class ModuleSessions implements IModule
 	{
 		// Maybe we need just to check
 		if (!$touch && !$return_data && self::$_check_cache) {
-			return true;
+			return self::$_check_cache;
 		}
 
 		// Current sid
@@ -193,13 +190,13 @@ class ModuleSessions implements IModule
 			self::stop();
 
 			// Save locally
-			self::$_check_cache = false;
+			self::$_check_cache = NULL;
 
 			return false;
 		}
 
 		// Save to local cache that session exists
-		self::$_check_cache = true;
+		self::$_check_cache = $session;
 
 		// Update session
 		if ($touch) {
