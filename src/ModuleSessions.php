@@ -25,11 +25,11 @@ class ModuleSessions implements IModule
 	private static $_session_data = '';
 	private static $_hash_uid = ''; // Required to check hash with sid
 
-	public static function start($user_id, $data = [])
+	public static function start($user_id, $data = [], $remember_in_cookie = false)
 	{
 		// No user id supplied
 		if (!$user_id || !ctype_digit((string)$user_id)) {
-			return false;
+			return NULL;
 		}
 
 		// Remove old DB entries
@@ -53,8 +53,11 @@ class ModuleSessions implements IModule
 		$session->setData($data);
 		$session->save();
 
-		// Set cookie in browser with main info
-		setcookie(self::$cookie_name, $sid, 0, '/');
+		// For checkboxes "Remember me"
+		if ($remember_in_cookie) {
+			// Set cookie in browser with main info
+			setcookie(self::$cookie_name, $sid, 0, '/');
+		}
 
 		// Create session data to check in future requests
 		$_SESSION['user_id'] = $user_id;
@@ -79,19 +82,13 @@ class ModuleSessions implements IModule
 
 	public static function stop()
 	{
-		// Not exists in browser
-		if (!isset($_COOKIE[self::$cookie_name])) {
-			return false;
-		}
-
-		// Value in browser is not correct
-		$sid = $_COOKIE[self::$cookie_name];
-		if (!strlen($sid) === 32 || !ctype_alnum($sid)) {
-			return false;
-		}
-
-		// Clear session, fill with empty data
+		// Clear cookie, fill with empty data
 		setcookie(self::$cookie_name, '', 86400, '/');
+
+		$sid = self::getSid();
+		if (!$sid) {
+			return NULL;
+		}
 
 		// Delete session from db
 		$sessions = new SessionEntityRepository();
@@ -159,7 +156,7 @@ class ModuleSessions implements IModule
 			return NULL;
 		}
 
-		return unserialize($session->getData());
+		return self::$_session_data = unserialize($session->getData());
 	}
 
 	public static function check($touch = false, $return_data = false)
@@ -172,7 +169,7 @@ class ModuleSessions implements IModule
 		// Current sid
 		$sid = self::getSid();
 		if (!$sid) {
-			return false;
+			return NULL;
 		}
 
 		// Find session entry in db
@@ -181,7 +178,7 @@ class ModuleSessions implements IModule
 		/** @var SessionEntity $session */
 		$session = $sessions->getFirstObjectFromCollection();
 		if (!$session) {
-			return false;
+			return NULL;
 		}
 
 		// Maybe it is old session
@@ -190,9 +187,7 @@ class ModuleSessions implements IModule
 			self::stop();
 
 			// Save locally
-			self::$_check_cache = NULL;
-
-			return false;
+			return self::$_check_cache = NULL;
 		}
 
 		// Save to local cache that session exists
@@ -224,6 +219,7 @@ class ModuleSessions implements IModule
 		if (!$sid) {
 			return;
 		}
+
 		$sessions = new SessionEntityRepository();
 		$sessions->setWhereSid($sid);
 		$sessions->setTs(NOW);
