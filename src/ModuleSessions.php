@@ -20,7 +20,9 @@ class ModuleSessions implements IModule
 	private static $ttl_in_seconds = 3600; // One hour
 	private static $cookie_name = 'sid';
 
-	private static $_check_cache;
+	/** @var SessionEntity $_check_cache */
+	private static $_check_cache = NULL;
+
 	private static $_sid = '';
 	private static $_session_data = '';
 	private static $_hash_uid = ''; // Required to check hash with sid
@@ -209,6 +211,7 @@ class ModuleSessions implements IModule
 	/**
 	 * Update current session timestamp
 	 * @param string $sid
+	 * @return bool
 	 */
 	public static function touch($sid = NULL)
 	{
@@ -217,13 +220,25 @@ class ModuleSessions implements IModule
 		}
 
 		if (!$sid) {
-			return;
+			return false;
 		}
 
-		$sessions = new SessionEntityRepository();
-		$sessions->setWhereSid($sid);
-		$sessions->setTs(NOW);
-		$sessions->save();
+		if (self::$_check_cache) {
+			$session = self::$_check_cache;
+		} else {
+			$sessions = new SessionEntityRepository();
+			$sessions->setWhereSid($sid);
+			$session = $sessions->getFirstObjectFromCollection();
+			if (!$session) {
+				return false;
+			}
+
+		}
+
+		$session->setTs(NOW);
+		$session->save();
+
+		return true;
 	}
 
 	/**
