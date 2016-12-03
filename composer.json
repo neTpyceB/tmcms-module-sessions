@@ -2,7 +2,11 @@
   "name": "devp-eu/tmcms-module-sessions",
   "type": "library",
   "description": "Module Sessions for TMCms",
-  "keywords": ["module", "sessions", "TMcms"],
+  "keywords": [
+    "module",
+    "sessions",
+    "TMcms"
+  ],
   "homepage": "http://devp.eu/",
   "license": "proprietary",
   "authors": [
@@ -13,6 +17,10 @@
       "role": "Developer"
     }
   ],
+  "require": {
+    "devp-eu/tmcms-core": "dev-master",
+    "devp-eu/tmcms-panel": "dev-master"
+  },
   "autoload": {
     "psr-4": {
       "TMCms\\Modules\\Sessions\\": "src"
