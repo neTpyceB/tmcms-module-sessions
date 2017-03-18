@@ -8,8 +8,10 @@ use TMCms\Orm\EntityRepository;
  * Class SessionCollection
  * @package TMCms\Modules\Sessions\Object
  *
- * @method setWhereSid(string $sid)
- * @method setTs(int $ts)
+ * @method $this setWhereSid(string $sid)
+ * @method $this setWhereUserId(string $sid)
+ *
+ * @method $this setTs(int $ts)
  */
 class SessionEntityRepository extends EntityRepository
 {
