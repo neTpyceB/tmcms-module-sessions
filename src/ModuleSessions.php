@@ -69,6 +69,25 @@ class ModuleSessions implements IModule
 		return $session;
 	}
 
+    /**
+     * @param int $ttl hals a day by default
+     *
+     * @return bool
+     */
+    private static function removeOld($ttl = 43200)
+    {
+        // Chance of 0.1% to clean up
+        if (mt_rand(0, 999)) {
+            return false;
+        }
+
+        $sessions = new SessionEntityRepository();
+        $sessions->addWhereFieldIsLower('ts', (NOW - $ttl));
+        $sessions->deleteObjectCollection();
+
+        return true;
+    }
+
 	private static function generateSidHash($uid = '')
 	{
 		// Generate random if not supplied
@@ -80,85 +99,6 @@ class ModuleSessions implements IModule
 		self::$_hash_uid = $uid;
 
 		return md5(VISITOR_HASH . $uid . VISITOR_HASH);
-	}
-
-	public static function stop()
-	{
-		// Clear cookie, fill with empty data
-		setcookie(self::$cookie_name, '', 86400, '/');
-
-		$sid = self::getSid();
-		if (!$sid) {
-			return NULL;
-		}
-
-		// Delete session from db
-		$sessions = new SessionEntityRepository();
-		$sessions->setWhereSid($sid);
-		$sessions->deleteObjectCollection();
-
-		// Remove from server session
-		unset($_SESSION['user_id'], $_SESSION[self::$cookie_name], $_SESSION['uid']);
-
-		// Remove from local cache
-		self::$_sid = '';
-		self::$_hash_uid = '';
-		self::$_session_data = '';
-
-		return true;
-	}
-
-	/**
-	 * Get current existing sid name
-	 * @return string
-	 *
-	 */
-	public static function getSid()
-	{
-		$sid = NULL;
-
-		if (isset(self::$_sid) && self::$_sid) { // Check in local cache
-			$sid = self::$_sid;
-		} elseif (isset($_SESSION[self::$cookie_name]) && $_SESSION[self::$cookie_name]) { // Check server session
-			$sid = $_SESSION[self::$cookie_name];
-		} elseif (isset($_COOKIE[self::$cookie_name]) && $_COOKIE[self::$cookie_name]) { // Check cookie
-			$sid = $_COOKIE[self::$cookie_name];
-		}
-
-		// Check length
-		if (strlen($sid) !== 32 || !ctype_alnum($sid)) {
-			$sid = NULL;
-		}
-
-		return $sid;
-	}
-
-	/**
-	 * Get data saved in current session
-	 * @return array
-	 */
-	public static function getData()
-	{
-		$sid = self::getSid();
-		if (!$sid) {
-			return NULL;
-		}
-
-		// Saved in local cache
-		if (self::$_session_data) {
-			return unserialize(self::$_session_data);
-		}
-
-		// Or get from db
-		$sessions = new SessionEntityRepository();
-		$sessions->setWhereSid($sid);
-		/** @var SessionEntity $session */
-		$session = $sessions->getFirstObjectFromCollection();
-		if (!$session) {
-			return NULL;
-		}
-
-		return self::$_session_data = unserialize($session->getData());
 	}
 
 	public static function check($touch = false, $return_data = false)
@@ -206,7 +146,58 @@ class ModuleSessions implements IModule
 		}
 
 		return $session;
-	}
+    }
+
+    /**
+     * Get current existing sid name
+     * @return string
+     *
+     */
+    public static function getSid()
+    {
+        $sid = NULL;
+
+        if (isset(self::$_sid) && self::$_sid) { // Check in local cache
+            $sid = self::$_sid;
+        } elseif (isset($_SESSION[self::$cookie_name]) && $_SESSION[self::$cookie_name]) { // Check server session
+            $sid = $_SESSION[self::$cookie_name];
+        } elseif (isset($_COOKIE[self::$cookie_name]) && $_COOKIE[self::$cookie_name]) { // Check cookie
+            $sid = $_COOKIE[self::$cookie_name];
+        }
+
+        // Check length
+        if (strlen($sid) !== 32 || !ctype_alnum($sid)) {
+            $sid = NULL;
+        }
+
+        return $sid;
+    }
+
+    public static function stop()
+    {
+        // Clear cookie, fill with empty data
+        setcookie(self::$cookie_name, '', 86400, '/');
+
+        $sid = self::getSid();
+        if (!$sid) {
+            return NULL;
+        }
+
+        // Delete session from db
+        $sessions = new SessionEntityRepository();
+        $sessions->setWhereSid($sid);
+        $sessions->deleteObjectCollection();
+
+        // Remove from server session
+        unset($_SESSION['user_id'], $_SESSION[self::$cookie_name], $_SESSION['uid']);
+
+        // Remove from local cache
+        self::$_sid = '';
+        self::$_hash_uid = '';
+        self::$_session_data = '';
+
+        return true;
+    }
 
 	/**
 	 * Update current session timestamp
@@ -241,21 +232,33 @@ class ModuleSessions implements IModule
 		return true;
 	}
 
-	/**
-	 * @param int $ttl hals a day by default
-	 * @return bool
-	 */
-	private static function removeOld($ttl = 43200)
-	{
-		// Chance of 0.1% to clean up
-		if (mt_rand(0, 999)) {
-			return false;
-		}
+    /**
+     * Get data saved in current session
+     * @return array
+     */
+    public static function getData()
+    {
+        $sid = self::getSid();
+        if (!$sid) {
+            return NULL;
+        }
 
+        // Saved in local cache
+        if (self::$_session_data) {
+            if (is_string(self::$_session_data)) {
+                return unserialize(self::$_session_data);
+            }
+        }
+
+        // Or get from db
 		$sessions = new SessionEntityRepository();
-		$sessions->addWhereFieldIsLower('ts', (NOW - $ttl));
-		$sessions->deleteObjectCollection();
+        $sessions->setWhereSid($sid);
+        /** @var SessionEntity $session */
+        $session = $sessions->getFirstObjectFromCollection();
+        if (!$session) {
+            return NULL;
+        }
 
-		return true;
+        return self::$_session_data = unserialize($session->getData());
 	}
 }
