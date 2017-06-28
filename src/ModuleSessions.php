@@ -172,10 +172,10 @@ class ModuleSessions implements IModule
 
     /**
      * Get current existing sid name
-     * @return string
+     * @return NULL|string
      *
      */
-    public static function getSid(): string
+    public static function getSid()
     {
         $sid = NULL;
 
@@ -188,7 +188,7 @@ class ModuleSessions implements IModule
         }
 
         // Check length
-        if (strlen($sid) !== 32 || !ctype_alnum($sid)) {
+        if (strlen((string)$sid) !== 32 || !ctype_alnum($sid)) {
             $sid = NULL;
         }
 
