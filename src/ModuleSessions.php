@@ -108,7 +108,7 @@ class ModuleSessions implements IModule
     {
         // Generate random if not supplied
         if (!$uid) {
-            $uid = uniqid(mt_rand(), 1);
+            $uid = uniqid((string)mt_rand(), true);
         }
 
         // Save for other functions
@@ -285,7 +285,7 @@ class ModuleSessions implements IModule
     /**
      * @param ClientEntity $client
      */
-    public static function deleteAllClientSessions(ClientEntity $client): void
+    public static function deleteAllClientSessions(ClientEntity $client)
     {
         $sessions = new SessionEntityRepository();
         $sessions->setWhereUserId($client->getId());
