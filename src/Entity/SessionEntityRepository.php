@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace TMCms\Modules\Sessions\Entity;
 
@@ -9,7 +10,7 @@ use TMCms\Orm\EntityRepository;
  * @package TMCms\Modules\Sessions\Object
  *
  * @method $this setWhereSid(string $sid)
- * @method $this setWhereUserId(string $sid)
+ * @method $this setWhereUserId(int $sid)
  *
  * @method $this setTs(int $ts)
  */

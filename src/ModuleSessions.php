@@ -1,7 +1,9 @@
 <?php
+declare(strict_types=1);
 
 namespace TMCms\Modules\Sessions;
 
+use TMCms\Modules\Clients\Entity\ClientEntity;
 use TMCms\Modules\IModule;
 use TMCms\Traits\singletonInstanceTrait;
 use TMCms\Modules\Sessions\Entity\SessionEntity;
@@ -11,141 +13,161 @@ defined('INC') or exit;
 
 class ModuleSessions implements IModule
 {
-	use singletonInstanceTrait;
+    use singletonInstanceTrait;
 
-	public static $tables = array(
-		'sessions' => 'm_sessions'
-	);
+    public static $tables = [
+        'sessions' => 'm_sessions'
+    ];
 
-	private static $ttl_in_seconds = 3600; // One hour
-	private static $cookie_name = 'sid';
+    private static $ttl_in_seconds = 3600; // One hour
+    private static $cookie_name = 'sid';
 
-	/** @var SessionEntity $_check_cache */
-	private static $_check_cache = NULL;
+    /** @var SessionEntity $_check_cache */
+    private static $_check_cache;
 
-	private static $_sid = '';
-	private static $_session_data = '';
-	private static $_hash_uid = ''; // Required to check hash with sid
+    private static $_sid = '';
+    private static $_session_data = '';
+    private static $_hash_uid = ''; // Required to check hash with sid
 
-	public static function start($user_id, $data = [], $remember_in_cookie = false)
-	{
-		// No user id supplied
-		if (!$user_id || !ctype_digit((string)$user_id)) {
-			return NULL;
-		}
+    /**
+     * @param       $user_id
+     * @param array $data
+     * @param bool  $remember_in_cookie
+     *
+     * @return NULL|SessionEntity
+     */
+    public static function start(int $user_id, array $data = [], bool $remember_in_cookie = false)
+    {
+        // No user id supplied
+        if (!$user_id || !ctype_digit((string)$user_id)) {
+            return NULL;
+        }
 
-		// Remove old DB entries
-		self::removeOld();
+        // Remove old DB entries
+        self::removeOld();
 
-		// Generate unique session id
-		while (($sid = self::generateSidHash()) && q_check(self::$tables['sessions'], '`sid` = "' . $sid . '"')) ;
+        // Generate unique session id
+        while (($sid = self::generateSidHash()) && q_check(self::$tables['sessions'], '`sid` = "' . $sid . '"')) {
+            // Do nothing, calculates in while
+        }
 
-		// Prepare data for db
-		$data = serialize($data);
+        // Prepare data for db
+        $data = json_encode($data);
 
-		// Save to local cache, prevents recalculations
-		self::$_sid = $sid;
-		self::$_hash_uid = $sid;
-		self::$_session_data = $data;
+        // Save to local cache, prevents recalculations
+        self::$_sid = $sid;
+        self::$_hash_uid = $sid;
+        self::$_session_data = $data;
 
-		// Create db entry for current session
-		$session = new SessionEntity();
-		$session->setSid($sid);
-		$session->setUserId($user_id);
-		$session->setData($data);
-		$session->save();
+        // Create db entry for current session
+        $session = new SessionEntity();
+        $session->setSid($sid);
+        $session->setUserId($user_id);
+        $session->setData($data);
+        $session->save();
 
-		// For checkboxes "Remember me"
-		if ($remember_in_cookie) {
-			// Set cookie in browser with main info
-			setcookie(self::$cookie_name, $sid, 0, '/');
-		}
+        // For checkboxes "Remember me"
+        if ($remember_in_cookie) {
+            // Set cookie in browser with main info
+            setcookie(self::$cookie_name, $sid, 0, '/');
+        }
 
-		// Create session data to check in future requests
-		$_SESSION['user_id'] = $user_id;
-		$_SESSION[self::$cookie_name] = $sid; // Current session id
-		$_SESSION['uid'] = self::$_hash_uid; // Unique id for hash generation, required to check hash
+        // Create session data to check in future requests
+        $_SESSION['user_id'] = $user_id;
+        $_SESSION[self::$cookie_name] = $sid; // Current session id
+        $_SESSION['uid'] = self::$_hash_uid; // Unique id for hash generation, required to check hash
 
-		return $session;
-	}
+        return $session;
+    }
 
     /**
      * @param int $ttl hals a day by default
      *
      * @return bool
      */
-    private static function removeOld($ttl = 43200)
+    private static function removeOld($ttl = 43200): bool
     {
         // Chance of 0.1% to clean up
-        if (mt_rand(0, 999)) {
+        if (random_int(0, 999)) {
             return false;
         }
 
         $sessions = new SessionEntityRepository();
-        $sessions->addWhereFieldIsLower('ts', (NOW - $ttl));
+        $sessions->addWhereFieldIsLower('ts', NOW - $ttl);
         $sessions->deleteObjectCollection();
 
         return true;
     }
 
-	private static function generateSidHash($uid = '')
-	{
-		// Generate random if not supplied
-		if (!$uid) {
-			$uid = uniqid(mt_rand(), 1);
-		}
+    /**
+     * @param string $uid
+     *
+     * @return string
+     */
+    private static function generateSidHash($uid = ''): string
+    {
+        // Generate random if not supplied
+        if (!$uid) {
+            $uid = uniqid(mt_rand(), 1);
+        }
 
-		// Save for other functions
-		self::$_hash_uid = $uid;
+        // Save for other functions
+        self::$_hash_uid = $uid;
 
-		return md5(VISITOR_HASH . $uid . VISITOR_HASH);
-	}
+        return md5(VISITOR_HASH . $uid . VISITOR_HASH);
+    }
 
-	public static function check($touch = false, $return_data = false)
-	{
-		// Maybe we need just to check
-		if (!$touch && !$return_data && self::$_check_cache) {
-			return self::$_check_cache;
-		}
+    /**
+     * @param bool $touch
+     * @param bool $return_data
+     *
+     * @return array|null|SessionEntity
+     */
+    public static function check($touch = false, $return_data = false)
+    {
+        // Maybe we need just to check
+        if (!$touch && !$return_data && self::$_check_cache) {
+            return self::$_check_cache;
+        }
 
-		// Current sid
-		$sid = self::getSid();
-		if (!$sid) {
-			return NULL;
-		}
+        // Current sid
+        $sid = self::getSid();
+        if (!$sid) {
+            return NULL;
+        }
 
-		// Find session entry in db
-		$sessions = new SessionEntityRepository();
-		$sessions->setWhereSid($sid);
-		/** @var SessionEntity $session */
-		$session = $sessions->getFirstObjectFromCollection();
-		if (!$session) {
-			return NULL;
-		}
+        // Find session entry in db
+        $sessions = new SessionEntityRepository();
+        $sessions->setWhereSid($sid);
+        /** @var SessionEntity $session */
+        $session = $sessions->getFirstObjectFromCollection();
+        if (!$session) {
+            return NULL;
+        }
 
-		// Maybe it is old session
-		if (NOW - $session->getTs() > self::$ttl_in_seconds) {
-			// Remove all session data
-			self::stop();
+        // Maybe it is old session
+        if (NOW - $session->getTs() > self::$ttl_in_seconds) {
+            // Remove all session data
+            self::stop();
 
-			// Save locally
-			return self::$_check_cache = NULL;
-		}
+            // Save locally
+            return self::$_check_cache = NULL;
+        }
 
-		// Save to local cache that session exists
-		self::$_check_cache = $session;
+        // Save to local cache that session exists
+        self::$_check_cache = $session;
 
-		// Update session
-		if ($touch) {
-			self::touch(self::$_sid);
-		}
+        // Update session
+        if ($touch) {
+            self::touch(self::$_sid);
+        }
 
-		// Need to return stored data
-		if ($return_data) {
-			return self::getData();
-		}
+        // Need to return stored data
+        if ($return_data) {
+            return self::getData();
+        }
 
-		return $session;
+        return $session;
     }
 
     /**
@@ -153,11 +175,11 @@ class ModuleSessions implements IModule
      * @return string
      *
      */
-    public static function getSid()
+    public static function getSid(): string
     {
         $sid = NULL;
 
-        if (isset(self::$_sid) && self::$_sid) { // Check in local cache
+        if (NULL !== self::$_sid && self::$_sid) { // Check in local cache
             $sid = self::$_sid;
         } elseif (isset($_SESSION[self::$cookie_name]) && $_SESSION[self::$cookie_name]) { // Check server session
             $sid = $_SESSION[self::$cookie_name];
@@ -199,42 +221,42 @@ class ModuleSessions implements IModule
         return true;
     }
 
-	/**
-	 * Update current session timestamp
-	 * @param string $sid
-	 * @return bool
-	 */
-	public static function touch($sid = NULL)
-	{
-		if (!$sid) {
-			$sid = self::getSid();
-		}
+    /**
+     * Update current session timestamp
+     * @param string $sid
+     * @return bool
+     */
+    public static function touch($sid = NULL): bool
+    {
+        if (!$sid) {
+            $sid = self::getSid();
+        }
 
-		if (!$sid) {
-			return false;
-		}
+        if (!$sid) {
+            return false;
+        }
 
-		if (self::$_check_cache) {
-			$session = self::$_check_cache;
-		} else {
-			$sessions = new SessionEntityRepository();
-			$sessions->setWhereSid($sid);
-			$session = $sessions->getFirstObjectFromCollection();
-			if (!$session) {
-				return false;
-			}
+        if (self::$_check_cache) {
+            $session = self::$_check_cache;
+        } else {
+            $sessions = new SessionEntityRepository();
+            $sessions->setWhereSid($sid);
+            $session = $sessions->getFirstObjectFromCollection();
+            if (!$session) {
+                return false;
+            }
 
-		}
+        }
 
-		$session->setTs(NOW);
-		$session->save();
+        $session->setTs(NOW);
+        $session->save();
 
-		return true;
-	}
+        return true;
+    }
 
     /**
      * Get data saved in current session
-     * @return array
+     * @return NULL|array
      */
     public static function getData()
     {
@@ -244,14 +266,12 @@ class ModuleSessions implements IModule
         }
 
         // Saved in local cache
-        if (self::$_session_data) {
-            if (is_string(self::$_session_data)) {
-                return unserialize(self::$_session_data);
-            }
+        if (self::$_session_data && is_string(self::$_session_data)) {
+            return json_decode(self::$_session_data);
         }
 
         // Or get from db
-		$sessions = new SessionEntityRepository();
+        $sessions = new SessionEntityRepository();
         $sessions->setWhereSid($sid);
         /** @var SessionEntity $session */
         $session = $sessions->getFirstObjectFromCollection();
@@ -259,6 +279,16 @@ class ModuleSessions implements IModule
             return NULL;
         }
 
-        return self::$_session_data = unserialize($session->getData());
-	}
+        return self::$_session_data = json_decode($session->getData());
+    }
+
+    /**
+     * @param ClientEntity $client
+     */
+    public static function deleteAllClientSessions(ClientEntity $client): void
+    {
+        $sessions = new SessionEntityRepository();
+        $sessions->setWhereUserId($client->getId());
+        $sessions->deleteObjectCollection();
+    }
 }
