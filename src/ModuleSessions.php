@@ -52,7 +52,7 @@ class ModuleSessions implements IModule
         }
 
         // Prepare data for db
-        $data = json_encode($data);
+        $data = serialize($data);
 
         // Save to local cache, prevents recalculations
         self::$_sid = $sid;
@@ -267,7 +267,7 @@ class ModuleSessions implements IModule
 
         // Saved in local cache
         if (self::$_session_data && is_string(self::$_session_data)) {
-            return json_decode(self::$_session_data);
+            return unserialize(self::$_session_data);
         }
 
         // Or get from db
@@ -279,7 +279,7 @@ class ModuleSessions implements IModule
             return NULL;
         }
 
-        return self::$_session_data = json_decode($session->getData());
+        return self::$_session_data = unserialize($session->getData());
     }
 
     /**
