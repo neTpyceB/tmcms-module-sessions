@@ -145,6 +145,11 @@ class ModuleSessions implements IModule
             return NULL;
         }
 
+        // Update session
+        if ($touch) {
+            self::touch(self::$_sid);
+        }
+
         // Maybe it is old session
         if (NOW - $session->getTs() > self::$ttl_in_seconds) {
             // Remove all session data
@@ -156,11 +161,6 @@ class ModuleSessions implements IModule
 
         // Save to local cache that session exists
         self::$_check_cache = $session;
-
-        // Update session
-        if ($touch) {
-            self::touch(self::$_sid);
-        }
 
         // Need to return stored data
         if ($return_data) {
